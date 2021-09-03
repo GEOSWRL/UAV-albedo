@@ -6,8 +6,6 @@ Created on Wed Sep  1 14:51:43 2021
 """
 import pandas as pd
 import pytz
-import os
-from datetime import datetime, timedelta, timezone
 import process_util
 import numpy as np
 
@@ -20,7 +18,7 @@ class UAV_Albedo:
     surface_data = ''
 
     TZ = 'UTC'
-    MDT = 'Etc/GMT+6'
+    MDT = 'US/Mountain'
     
     source_epsg = 'EPSG:4326'
     dest_epsg = ''
