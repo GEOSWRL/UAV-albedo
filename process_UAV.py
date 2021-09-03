@@ -44,7 +44,18 @@ class UAV_Albedo:
     
     def read_DJI_csv(self, path_to_dji_log):
         
-        return pd.read_csv(path_to_dji_log, usecols=['GPS:dateTimeStamp', 'IMU_ATTI(0):roll:C', 'IMU_ATTI(0):pitch:C', 'IMU_ATTI(0):yaw:C', 'IMU_ATTI(0):velComposite:C', 'IMU_ATTI(0):tiltInclination:C', 'IMU_ATTI(0):tiltDirectionEarthFrame:C', 'IMU_ATTI(0):tiltDirectionBodyFrame:C', 'GPS:Long', 'GPS:Lat', 'GPS:heightMSL', 'GPS:dateTimeStamp'], header=0)
+        return pd.read_csv(path_to_dji_log, usecols=['GPS:dateTimeStamp', 
+                                                     'IMU_ATTI(0):roll:C', 
+                                                     'IMU_ATTI(0):pitch:C', 
+                                                     'IMU_ATTI(0):yaw:C', 
+                                                     'IMU_ATTI(0):velComposite:C', 
+                                                     'IMU_ATTI(0):tiltInclination:C', 
+                                                     'IMU_ATTI(0):tiltDirectionEarthFrame:C', 
+                                                     'IMU_ATTI(0):tiltDirectionBodyFrame:C', 
+                                                     'GPS:Long', 
+                                                     'GPS:Lat', 
+                                                     'GPS:heightMSL', 
+                                                     'GPS:dateTimeStamp'], header=0)
         
     
     def read_Meteon_csv(self, path_to_meteon_log):
@@ -53,11 +64,38 @@ class UAV_Albedo:
         
     def add_UTM_coordinates(self, df):
         
-        projected_lon, projected_lat = process_util.convert_coordinates(self.source_epsg, self.dest_epsg, df['GPS:Long'], df['GPS:Lat'])
+        projected_lon, projected_lat = process_util.convert_coordinates(self.source_epsg, self.dest_epsg, df['lon'], df['lat'])
         
         df['lon_utm'] = projected_lon
         df['lat_utm'] = projected_lat
         
+        return df
+    
+    
+    def prep_DJI_log(self, path_to_dji_log):
+
+        df = self.read_DJI_csv(path_to_dji_log)
+        
+        df = df.rename(columns={'GPS:dateTimeStamp': 'datetime', 
+                                'IMU_ATTI(0):roll:C': 'roll', 
+                                'IMU_ATTI(0):pitch:C': 'pitch', 
+                                'IMU_ATTI(0):yaw:C': 'yaw', 
+                                'IMU_ATTI(0):velComposite:C': 'velocity', 
+                                'IMU_ATTI(0):tiltInclination:C': 'tilt', 
+                                'IMU_ATTI(0):tiltDirectionEarthFrame:C': 'tilt_dir', 
+                                'IMU_ATTI(0):tiltDirectionBodyFrame:C': 'tilt_dir_body_frame', 
+                                'GPS:Long': 'lon', 
+                                'GPS:Lat': 'lat', 
+                                'GPS:heightMSL': 'alt_msl'})
+        
+        #convert to mountain time
+        df['datetime'] = pd.DatetimeIndex(df['datetime']).tz_convert(pytz.timezone(self.TZ))
+    
+        #flight logs collect on milliseconds, so we must average values over each second
+        df = df.groupby(df['datetime']).mean()
+        
+        df = self.add_UTM_coordinates(df)
+    
         return df
     
     def add_radiative_transfer_fields(self, df):
@@ -69,9 +107,9 @@ class UAV_Albedo:
         
         for index, row in df.iterrows():
             
-            lat = row['GPS:Lat']
-            lon = row['GPS:Long']
-            alt_m = row['GPS:heightMSL']
+            lat = row['lat']
+            lon = row['lon']
+            alt_m = row['alt_msl']
             dt = index
             
             p_dir, p_diff, solar_zenith, solar_azimuth = process_util.run_radiative_transfer(self.spectral_bandwidth, lat, lon, alt_m, dt)
@@ -82,21 +120,6 @@ class UAV_Albedo:
             df.loc[index, '6s_Solar_Azimuth_Angle'] = solar_azimuth
         
         return df
-        
-    def prep_DJI_log(self, path_to_dji_log):
-
-        df = self.read_DJI_csv(path_to_dji_log)
-        
-        #convert to mountain time
-        df['GPS:dateTimeStamp'] = pd.DatetimeIndex(df['GPS:dateTimeStamp']).tz_convert(pytz.timezone(self.TZ))
-    
-        #flight logs collect on milliseconds, so we must average values over each second
-        df = df.groupby(df['GPS:dateTimeStamp']).mean()
-        
-        df = self.add_UTM_coordinates(df)
-    
-        return df
-        
     
     def clean_Meteon_log(self, path_to_meteon_log):
         

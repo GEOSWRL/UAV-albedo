@@ -41,6 +41,7 @@ class Topographic_Correction:
     PFOV_rad = ''
     
     uncorrected_albedo = ''
+    corrected_albedo = ''
     
     solar_zenith = ''
     solar_azimuth = ''
@@ -70,13 +71,13 @@ class Topographic_Correction:
         self.uav_data = UAV_point
         self.point_lon = UAV_point['lon_utm']
         self.point_lat = UAV_point['lat_utm']
-        self.tilt = UAV_point['IMU_ATTI(0):tiltInclination:C']
-        self.tilt_dir = UAV_point['IMU_ATTI(0):tiltDirectionEarthFrame:C']
-        self.point_alt_msl = UAV_point['GPS:heightMSL']
+        self.tilt = UAV_point['tilt']
+        self.tilt_dir = UAV_point['tilt_dir']
+        self.point_alt_msl = UAV_point['alt_msl']
         
-        self.pitch = UAV_point['IMU_ATTI(0):pitch:C']
-        self.roll = UAV_point['IMU_ATTI(0):roll:C']
-        self.yaw = UAV_point['IMU_ATTI(0):yaw:C']
+        self.pitch = UAV_point['pitch']
+        self.roll = UAV_point['roll']
+        self.yaw = UAV_point['yaw']
         
         self.uncorrected_albedo =  UAV_point['albedo']
         
@@ -106,7 +107,7 @@ class Topographic_Correction:
     def run_viewshed(self, elev_band, point_lon, point_lat, agl_alt):
     
         viewshed = gdal.ViewshedGenerate(elev_band, 'GTiff', 
-                                 'C:/Temp/3DEP/viewshed_test.tif',
+                                 'D:/UAV-albedo/data_test_dir/temp_files/temp_viewshed.tif',
                                  creationOptions=None,
                                  observerX=point_lon, 
                                  observerY=point_lat, 
@@ -119,45 +120,34 @@ class Topographic_Correction:
                                  dfCurvCoeff=1,
                                  mode=1,
                                  maxDistance=800)
-    
-        return viewshed
+        
+        viewshed_array = viewshed.GetRasterBand(1).ReadAsArray()
+        viewshed=None
+        
+        return viewshed_array
 
     def calc_point_terrain_parameters(self):
     
 
-        ################### create viewshed array ###############################
-    
-        #resampled = pu.resample(model_source, coarse_source, 'C:/Temp/temp/viewshed_resampled.tif')
-        #resampled_band = resampled.GetRasterBand(1)
-        #resampled_band.SetNoDataValue(np.nan)
+        #create viewshed array
+        viewshed_array = self.run_viewshed(self.surface_data.get_elevation_band(), self.point_lon, self.point_lat, self.point_alt_agl)
         
-        viewshed = self.run_viewshed(self.surface_data.get_elevation_band(), self.point_lon, self.point_lat, self.point_alt_agl)
-        viewshed_array = viewshed.GetRasterBand(1).ReadAsArray()
-    
-        #resample viewshed array to original resolution
-        #viewshed_aligned = tcu.resample(viewshed, model_source,'C:/Temp/temp/viewshed_temp.tif')
-        #viewshed_array = viewshed_aligned.GetRasterBand(1).ReadAsArray()
-        
-        
+        #set elevation raster pixels to nan if outside viewshed
         not_visible = np.where(viewshed_array==0)
         self.elev_array[not_visible] = np.nan
     
-        #################### create footprint projection ###########################
+        #calculate necesarry distance arrays for footprint projection
         elev_diff = self.point_alt_msl - self.elev_array # calculate elevation difference
         elev_diff[elev_diff<=0]=np.nan # points above the downward-facing sensor should be masked out as well
-
         dist_y = self.ycoords_array - self.point_lat
-        
         dist_x = self.xcoords_array - self.point_lon
         
+        #rotate the surface normal of the downward-facing sensor based off UAV pitch, roll, yaw
         surface_normal = [0,0,-1]
-        
         pitch_radians = np.radians(self.pitch)
         roll_radians = np.radians(self.roll)
         yaw_radians = np.radians(self.yaw)
-
         surface_normal = pu.rotate_normals(surface_normal, pitch_radians, roll_radians, yaw_radians)
-        
         
         #calculate incidence angle between radiating pixel and sensor
         angle = np.arcsin(np.abs((surface_normal[0] * dist_x + 
@@ -168,27 +158,19 @@ class Topographic_Correction:
                                           ))
                                  ))
         
-        #filter pixels based on FOV of sensor
-        
+        #now filter pixels based on defined PFOV of sensor
         angle[angle<=(math.pi/2)-(self.PFOV_rad/2)]=np.nan
-
         self.footprint = angle
         
+        #calculate weighting
         cosine_incidence = np.cos((math.pi/2)-angle)
         cos_sum = np.nansum(cosine_incidence)
         weighting = cosine_incidence/cos_sum  
         
-        # calculate cosine wighted average
-        aspect_arr_weighted = weighting * self.aspect_array
-        weighted_aspect = np.nansum(aspect_arr_weighted)
-        
-        # calculate cosine wighted average
-        slope_arr_weighted = weighting * self.slope_array
-        weighted_slope = np.nansum(slope_arr_weighted)
-        
-        #calculate cosine averaged ls8 albedo value
-        ls8_arr_weighted = weighting * self.ls8_array
-        weighted_ls8 = np.nansum(ls8_arr_weighted)
+        # calculate cosine wighted average of surface data
+        weighted_aspect = pu.calc_weighted_avg(self.aspect_array, weighting)
+        weighted_slope = pu.calc_weighted_avg(self.slope_array, weighting)
+        weighted_ls8 = pu.calc_weighted_avg(self.ls8_array, weighting)
     
         return weighted_slope, weighted_aspect, weighted_ls8
     
@@ -203,5 +185,7 @@ class Topographic_Correction:
         corrected_albedo = self.uncorrected_albedo * ((self.p_diffuse * np.cos(np.radians(self.solar_zenith)) + self.p_direct * cos_pyranometer_incidence) / 
                                            (self.p_diffuse * np.cos(np.radians(self.solar_zenith)) + self.p_direct * cos_slope_incidence))
         
-        return corrected_albedo
+        self.corrected_albedo = corrected_albedo
+        
+        return
 

@@ -110,6 +110,9 @@ def write_geotiff(new_image_name, image_shape, geotransform, projection, dataset
     outdata.FlushCache() ##saves to disk!!
     outdata = None
 
+def calc_weighted_avg(array, weighting):
+    
+    return np.nansum(weighting * array)
 
 def sin(angle):
     return math.sin(angle)
