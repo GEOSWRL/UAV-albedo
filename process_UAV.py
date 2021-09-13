@@ -15,7 +15,6 @@ class UAV_Albedo:
     DJI_log = ''
     Meteon_log = ''
     merged_log = ''
-    surface_data = ''
 
     TZ = 'UTC'
     MDT = 'US/Mountain'
@@ -25,7 +24,7 @@ class UAV_Albedo:
     
     spectral_bandwidth = ''
     
-    def __init__(self, path_to_dji_log, path_to_meteon_log, surface_data, local_utm_epsg, spectral_bandwidth):
+    def __init__(self, path_to_dji_log, path_to_meteon_log, local_utm_epsg, spectral_bandwidth):
         
         self.dest_epsg = local_utm_epsg
         
@@ -39,7 +38,6 @@ class UAV_Albedo:
         
         self.merged_log = self.add_radiative_transfer_fields(self.merged_log)
         
-        self.surface_data = surface_data
         
     
     def read_DJI_csv(self, path_to_dji_log):

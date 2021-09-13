@@ -185,11 +185,6 @@ def get_tilt(pitch, roll, yaw):
     
     return tilt_deg, tilt_dir_deg
 
-
-def covert_to_utm(self):
-    print('Hello, my name is', self.name)
-    
-
 def rotate_normals(surface_normal, pitch_rad, roll_rad, yaw_rad):
 
     r = R.from_euler('ZYX', [yaw_rad, pitch_rad, roll_rad], degrees=False)
