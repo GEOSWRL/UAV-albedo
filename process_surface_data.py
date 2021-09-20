@@ -98,6 +98,10 @@ class Surface_Data:
     def get_ycoords_array(self):
         
         return self.ycoords_utm.GetRasterBand(1).ReadAsArray()
+    
+    def get_geotransform(self):
+        
+        return self.elevation_utm.GetGeoTransform()
    
 
 

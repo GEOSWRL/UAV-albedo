@@ -17,6 +17,7 @@ class Topographic_Correction:
     
     uav_data = ''
     surface_data = ''
+
     elevation_source_type = ''
     elev_array = ''
     slope_array = ''
@@ -55,11 +56,16 @@ class Topographic_Correction:
     weighted_aspect = ''
     weighted_ls8 = ''
     
+    dist_x =''
+    dist_y = ''
+    elev_diff = ''
     
-    def __init__(self, UAV_point, surface_data, elevation_source_type, PFOV):
+    
+    def __init__(self, UAV_point, surface_data, elevation_source_type, PFOV, point_alt_agl = None, gps_point_on_ground = False):
         
         self.surface_data = surface_data
         self.elevation_source_type = elevation_source_type
+        
         self.elev_array = self.surface_data.get_elevation_array()
         self.slope_array = self.surface_data.get_slope_array()
         self.aspect_array = self.surface_data.get_aspect_array()
@@ -84,7 +90,15 @@ class Topographic_Correction:
         self.PFOV = PFOV
         self.PFOV_rad = np.radians(PFOV)
         
-        self.point_alt_agl = self.get_alt_agl()
+        if point_alt_agl == None:
+            self.point_alt_agl = self.get_alt_agl()
+            
+        else:
+            self.point_alt_agl = point_alt_agl
+            
+        if gps_point_on_ground:
+            self.point_alt_msl += self.point_alt_agl
+            
         
         self.solar_zenith = UAV_point['6s_Solar_Zenith_Angle']
         self.solar_azimuth = UAV_point['6s_Solar_Azimuth_Angle']
@@ -121,8 +135,14 @@ class Topographic_Correction:
                                  mode=1,
                                  maxDistance=800)
         
-        viewshed_array = viewshed.GetRasterBand(1).ReadAsArray()
-        viewshed=None
+        
+        
+        viewshed_resampled = pu.resample(viewshed, 
+                                         self.surface_data.elevation_utm, 
+                                         'D:/UAV-albedo/data_test_dir/temp_files/temp_viewshed_res.tif')
+        
+        
+        viewshed_array = viewshed_resampled.GetRasterBand(1).ReadAsArray()
         
         return viewshed_array
 
@@ -134,13 +154,14 @@ class Topographic_Correction:
         
         #set elevation raster pixels to nan if outside viewshed
         not_visible = np.where(viewshed_array==0)
+        
         self.elev_array[not_visible] = np.nan
     
         #calculate necesarry distance arrays for footprint projection
-        elev_diff = self.point_alt_msl - self.elev_array # calculate elevation difference
-        elev_diff[elev_diff<=0]=np.nan # points above the downward-facing sensor should be masked out as well
-        dist_y = self.ycoords_array - self.point_lat
-        dist_x = self.xcoords_array - self.point_lon
+        self.elev_diff = self.point_alt_msl - self.elev_array # calculate elevation difference
+        self.elev_diff[self.elev_diff<=0]=np.nan # points above the downward-facing sensor should be masked out as well
+        self.dist_y = self.ycoords_array - self.point_lat
+        self.dist_x = self.xcoords_array - self.point_lon
         
         #rotate the surface normal of the downward-facing sensor based off UAV pitch, roll, yaw
         surface_normal = [0,0,-1]
@@ -150,10 +171,10 @@ class Topographic_Correction:
         surface_normal = pu.rotate_normals(surface_normal, pitch_radians, roll_radians, yaw_radians)
         
         #calculate incidence angle between radiating pixel and sensor
-        angle = np.arcsin(np.abs((surface_normal[0] * dist_x + 
-                                  surface_normal[1] * dist_y + 
-                                  surface_normal[2] * -1 * elev_diff) /
-                                 (np.sqrt(np.square(dist_x)+np.square(dist_y)+np.square(elev_diff)) *
+        angle = np.arcsin(np.abs((surface_normal[0] * self.dist_x + 
+                                  surface_normal[1] * self.dist_y + 
+                                  surface_normal[2] * -1 * self.elev_diff) /
+                                 (np.sqrt(np.square(self.dist_x)+np.square(self.dist_y)+np.square(self.elev_diff)) *
                                   np.sqrt(np.square(surface_normal[0])+np.square(surface_normal[1])+np.square(surface_normal[2])
                                           ))
                                  ))
