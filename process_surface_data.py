@@ -60,15 +60,17 @@ class Surface_Data:
             
             #not yet implemented
             self.ls8_wgs = gdal.Open(self.PATH_TO_RAW_LS8+ls8_filename, gdalconst.GA_ReadOnly)
-   
-    # Sample Method 
+    
     def prep_surface_data(self):
+        #not yet implemented
         print('Hello, my name is', self.name)
         
     def covert_to_utm(self):
+        #not yet implemented
         print('Hello, my name is', self.name)
         
     def fuse_data_sources(self):
+       #not yet implemented
         print('Hello, my name is', self.name)
         
     def get_elevation_array(self):

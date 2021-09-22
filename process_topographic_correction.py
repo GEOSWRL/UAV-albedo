@@ -99,7 +99,6 @@ class Topographic_Correction:
         if gps_point_on_ground:
             self.point_alt_msl += self.point_alt_agl
             
-        
         self.solar_zenith = UAV_point['6s_Solar_Zenith_Angle']
         self.solar_azimuth = UAV_point['6s_Solar_Azimuth_Angle']
     
@@ -135,12 +134,9 @@ class Topographic_Correction:
                                  mode=1,
                                  maxDistance=800)
         
-        
-        
         viewshed_resampled = pu.resample(viewshed, 
                                          self.surface_data.elevation_utm, 
                                          'D:/UAV-albedo/data_test_dir/temp_files/temp_viewshed_res.tif')
-        
         
         viewshed_array = viewshed_resampled.GetRasterBand(1).ReadAsArray()
         
