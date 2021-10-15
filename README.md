@@ -63,6 +63,48 @@ to activate the environment
 conda activate uav-albedo
 ```
 
+### Preparing the data
+The topographic correction and comparison to an external albedo product (process_topographic_correction.py) requires an albedo datalog, surface models, and an external gridded albedo product.
+
+The input albedo datalog requires the following fields with the corresponding (field names):
+* pitch ('pitch')
+* roll ('roll')
+* yaw ('yaw')
+* latitude in UTM ('lat_utm')
+* longitude in UTM ('lon_utm')
+* altitude above mean sea level in meters ('alt_msl')
+* raw albedo ('albedo')
+* solar zenith angle ('6s_Solar_Zenith_Angle')
+* solar azimuth angle ('6s_Solar_Azimuth_Angle')
+* diffuse irradiance proportion ('6s_Diffuse_Irradiance_Proportion')
+* direct irradiance proportion ('6s_Direct_Irradiance_Proportion')
+
+The project contains code specific to Mullen et al. (2021) to merge and filter albedo datalogs into a format that ready for ingestion into process_topographic_correction.py
+* process_UAV.py: used to merge and filter datalogs from a DJI M210 v2 UAV and a Meteon 2.0 datalogger connected to upward and downward-facing Kipp and Zonen PR1 pyranometers
+* process_ground_data.py: used to merge and filter datalogs from a ground-based sensing platform that utilizes a Witmotion inertial measurement unit (IMU), a Meteon 2.0 datalogger connected to upward and downward-facing Kipp and Zonen PR1 pyranometers
+
+If the user has albedo logs from a different platform, they can utilize the 'run_radiative_transfer' method located in 'process_util.py' to generate the required radiative transfer fields, provided there is data for the following fields with corresponding (field names):
+* spectral bandwidth
+* latitude (WGS84) ('lat')
+* longitude (WGS84) ('lon')
+* altitude above mean sea level (m) ('alt_msl')
+* date and time (UTC)
+
+Topographic correction requires the following terrain models in GeoTiff format
+
+* elevation
+* slope
+* aspect
+* x coordinate array (longitude in UTM)
+* y coordinate array (latitude in UTM)
+* note: all terrain models must have the same geographical extent and pixel size
+
+Comparison to an external albedo product requires an external albedo raster in GeoTiff format
+note: must have the same geographical extent and pixel size as terrain models
+
+The project contains code that may be useful for generating these required terrain models
+
+## Runing the topographic correction and comparison
 now, edit the following code lines in 'process_main.py' with the proper paths and filenames
 
 ```python
