@@ -49,18 +49,44 @@ This python script contains methods used in multiple other scripts within the pr
 ![image](workflow.jpg)
 
 ## Usage
+Downloading required dependencies is done easily through Anaconda
+
+To install the environment, in an Anaconda prompt enter:
+
+```bash
+conda env create --file path_to_uav-albedo_directory/uav-albedo.yml
+```
+
+to activate the environment
+
+```bash
+conda activate uav-albedo
+```
+
+now, edit the following code lines in 'process_main.py' with the proper paths and filenames
 
 ```python
-import foobar
 
-# returns 'words'
-foobar.pluralize('word')
+PATH_TO_DJI_CSV = 'path_to_raw_dji_flight_log.csv'
+PATH_TO_METEON_CSV = 'path_to_raw_radiometer_datalog.csv'
+PATH_TO_OUTPUT_LOG = 'path_to_output_preprocessed_uav_albedo_log.csv'
+PATH_TO_PREPPED_LOG = 'path_to_preprocessed_uav_albedo_log.csv'
 
-# returns 'geese'
-foobar.pluralize('goose')
+PATH_TO_IMU_CSV = 'path_to_raw_imu_log.csv'
+PATH_TO_GROUND_METEON = 'path_to_raw_radiometer_datalog.xls'
+PATH_TO_GPS_DATA = 'path_to_ground_validation_gps_log.csv'
+PATH_TO_OUTPUT_IMU = 'path_to_output_preprocessed_validation_measurements.xlsx'
 
-# returns 'phenomenon'
-foobar.singularize('phenomena')
+LOCAL_UTM_EPSG = 'EPSG:32612' #UTM Zone 12N for Montana
+PYRANOMETER_BANDWIDTH = [0.31, 2.7] #in micrometers, 0.31-2.7 for Kipp and Zonen PR1 pyranometers
+
+SfM=Surface_Data('name_of_surface_model.tif', 
+                'name_of_slope_raster.tif', 
+                'name_of_aspect_raster.tif', 
+                'name_of_ls8_albedo_raster.tif',
+                'name_of_x_coordinate_array_raster.tif', 
+                'name_of_y_coordinate_array_raster.tif')
+				
 ```
 
 ## Contributing
@@ -68,9 +94,7 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 
 Please make sure to update tests as appropriate.
 
-```bash
-pip install foobar
-```
+
 
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)
