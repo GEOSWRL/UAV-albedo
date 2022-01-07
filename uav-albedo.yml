@@ -1,0 +1,15 @@
+name: uav-albedo
+dependencies:
+  - numpy
+  - pandas
+  - GDAL==3.2.1
+  - matplotlib==3.2.2
+  - pandas==1.0.5
+  - pyproj==3.1.0
+  - pytz==2020.1
+  - numpy==1.18.5
+  - seaborn==0.10.1
+  - scipy==1.5.0
+  - osgeo==0.0.1
+  - Py6S==1.9.0
+  - scikit_learn==1.0
