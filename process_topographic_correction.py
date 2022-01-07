@@ -161,10 +161,14 @@ class Topographic_Correction:
         
         #rotate the surface normal of the downward-facing sensor based off UAV pitch, roll, yaw
         surface_normal = [0,0,-1]
-        pitch_radians = np.radians(self.pitch)
+        
+        pitch_radians = np.radians(self.pitch*-1)
         roll_radians = np.radians(self.roll)
-        yaw_radians = np.radians(self.yaw)
+        yaw_radians = np.radians(90-self.yaw)
+        
         surface_normal = pu.rotate_normals(surface_normal, pitch_radians, roll_radians, yaw_radians)
+        
+        
         
         #calculate incidence angle between radiating pixel and sensor
         angle = np.arcsin(np.abs((surface_normal[0] * self.dist_x + 
@@ -177,13 +181,13 @@ class Topographic_Correction:
         
         #now filter pixels based on defined PFOV of sensor
         angle[angle<=(math.pi/2)-(self.PFOV_rad/2)]=np.nan
-        self.footprint = angle
+        
         
         #calculate weighting
         cosine_incidence = np.cos((math.pi/2)-angle)
         cos_sum = np.nansum(cosine_incidence)
         weighting = cosine_incidence/cos_sum  
-        
+        self.footprint = weighting
         # calculate cosine wighted average of surface data
         weighted_aspect = pu.calc_weighted_avg(self.aspect_array, weighting)
         weighted_slope = pu.calc_weighted_avg(self.slope_array, weighting)

@@ -49,6 +49,8 @@ The input albedo datalog requires the following fields with the corresponding (f
 * pitch ('pitch')
 * roll ('roll')
 * yaw ('yaw')
+* tilt ('degrees')
+* tilt direction ('degrees')
 * latitude in UTM ('lat_utm')
 * longitude in UTM ('lon_utm')
 * altitude above mean sea level in meters ('alt_msl')

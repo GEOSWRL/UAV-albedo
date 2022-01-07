@@ -16,7 +16,8 @@ import numpy as np
 PATH_TO_DJI_CSV = 'D:/UAV-albedo/data_test_dir/03_UAV_snow_data/01_raw_data/dji_flight_logs/20210428_YC_FLY299.csv'
 PATH_TO_METEON_CSV = 'D:/UAV-albedo/data_test_dir/03_UAV_snow_data/01_raw_data/radiometers/20210428_YC_Meteon_lawnmower.csv'
 PATH_TO_OUTPUT_LOG = 'D:/UAV-albedo/data_test_dir/03_UAV_snow_data/02_processed_data/01_merged_datalogs/01_lawnmower_surveys/20210428_YC_FLY299_merged.csv'
-PATH_TO_PREPPED_LOG = 'D:/UAV-albedo/data_test_dir/03_UAV_snow_data/02_processed_data/01_merged_datalogs/04_vertical_transects_cleaned/20210428_YC_VT5.csv'
+#PATH_TO_PREPPED_LOG = 'D:/UAV-albedo/data_test_dir/03_UAV_snow_data/02_processed_data/01_merged_datalogs/04_vertical_transects_cleaned/20210428_YC_VT5.csv'
+PATH_TO_PREPPED_LOG = 'C:/Users/x51b783/Documents/Mirror/Masters/Figures/footprints/data_point_vt3_30m.csv'
 
 PATH_TO_IMU_CSV = 'D:/UAV-albedo/data_test_dir/02_ground_validation/01_raw_data/IMU/20210311_YC_IMU_all.csv'
 PATH_TO_GROUND_METEON = 'D:/UAV-albedo/data_test_dir/02_ground_validation/01_raw_data/radiometers/20210311_YC_Meteon_Ground.xls'
@@ -56,6 +57,8 @@ def process_uav_data(topo_data_source, pfov):
     prepped_df['ls8_albedo'] = np.zeros(len(prepped_df))
     prepped_df['topo_data_source'] = [topo_data_source]*len(prepped_df)
     
+    tc = ''
+    
     for index, row in prepped_df.iterrows():
         
         tc = Topographic_Correction(row, SfM, topo_data_source, pfov)
@@ -67,7 +70,7 @@ def process_uav_data(topo_data_source, pfov):
         prepped_df.loc[index, 'corrected_albedo'] = tc.corrected_albedo
         prepped_df.loc[index, 'ls8_albedo'] = tc.weighted_ls8
         
-    return prepped_df
+    return prepped_df, tc
 
 
 def process_ground_data(topo_data_source, pfov):
@@ -90,13 +93,13 @@ def process_ground_data(topo_data_source, pfov):
     
     return prepped_df
 
-def footprint_to_tiff(topo_correction):
+def footprint_to_tiff(topo_correction, path):
         
         fp=topo_correction.footprint    
     
         gt = SfM.get_geotransform()
         
-        pu.write_geotiff('D:/UAV-albedo/data_test_dir/temp_files/footprint.tif', 
+        pu.write_geotiff(path, 
                          np.shape(fp), gt, 32612, fp)
 
 def fov_sensitivity_analysis(topo_data_source, data_type = 'UAV'):
@@ -124,8 +127,12 @@ def fov_sensitivity_analysis(topo_data_source, data_type = 'UAV'):
     return df
 
 
-df = fov_sensitivity_analysis('SfM')
-df.to_csv('D:/UAV-albedo/data_test_dir/03_UAV_snow_data/02_processed_data/03_topo_correction/02_corrected_albedo/02_vertical_transects/02_FOV/20210428_YC_VT5_FOV.csv')
+#df = fov_sensitivity_analysis('SfM')
+#df.to_csv('D:/UAV-albedo/data_test_dir/03_UAV_snow_data/02_processed_data/03_topo_correction/02_corrected_albedo/02_vertical_transects/02_FOV/20210428_YC_VT5_FOV.csv')
+
+df, tc= process_uav_data('SfM', 170)
+path = 'C:/Users/x51b783/Documents/Mirror/Masters/Figures/footprints/footprint_170_deg_VT3.tif'
+footprint_to_tiff(tc, path)
 
 
 
